@@ -1,0 +1,41 @@
+{
+    "compilerOptions": {
+      // 目标环境
+      "target": "ES2022",
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "lib": ["ES2022"],
+  
+      // 输出
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "declaration": true,
+  
+      // 严格模式（全部打开！）
+      "strict": true,
+      "noUncheckedIndexedAccess": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "exactOptionalPropertyTypes": false,
+  
+      // 互操作
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "forceConsistentCasingInFileNames": true,
+  
+      // Node.js 类型
+      "types": ["node"],
+
+      // 路径别名
+      "ignoreDeprecations": "6.0",
+      "paths": {
+        "*": ["./*"],
+        "@/*": ["./src/*"]
+      },
+  
+      "skipLibCheck": true,
+      "resolveJsonModule": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist"]
+  }
