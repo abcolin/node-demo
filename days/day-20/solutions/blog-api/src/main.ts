@@ -1,47 +1,28 @@
 import 'reflect-metadata';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationError } from 'class-validator';
 import { AppModule } from './app.module';
+import type { AppConfig } from './config/configuration';
 
-interface FieldError {
-  field: string;
-  messages: string[];
-}
-
-function flattenErrors(errors: ValidationError[], parentPath = ''): FieldError[] {
-  return errors.flatMap((err) => {
-    const path = parentPath ? `${parentPath}.${err.property}` : err.property;
-    const own: FieldError[] = err.constraints
-      ? [{ field: path, messages: Object.values(err.constraints) }]
-      : [];
-    const children = err.children?.length ? flattenErrors(err.children, path) : [];
-    return [...own, ...children];
-  });
-}
-
+// main.ts 只做装配：bootstrap、CORS、shutdown hooks、listen
+// 任何业务代码出现在这里都是异味
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const config = app.get(ConfigService<AppConfig, true>);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-      // 把校验失败转成结构化响应，便于前端按字段定位错误
-      exceptionFactory: (errors) =>
-        new BadRequestException({
-          code: 'VALIDATION_ERROR',
-          message: '请求参数校验失败',
-          errors: flattenErrors(errors),
-        }),
-    }),
-  );
+  app.enableCors({
+    origin: config.get('cors.origin', { infer: true }),
+    credentials: true,
+  });
 
-  const port = Number(process.env.PORT) || 3000;
+  // 没开这个，容器 SIGTERM 时正在处理的请求会被一刀切断
+  // OnApplicationShutdown 钩子也不会触发，连接池泄漏的经典源头
+  app.enableShutdownHooks();
+
+  const port = config.get('port', { infer: true });
   await app.listen(port);
-  console.log(`🚀 Day 19 Blog API: http://localhost:${port}`);
+  Logger.log(`🚀 Day 20 Blog API listening on http://localhost:${port}`, 'Bootstrap');
 }
 
 bootstrap();

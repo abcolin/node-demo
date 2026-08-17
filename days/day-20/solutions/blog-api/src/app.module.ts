@@ -1,21 +1,26 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+
+import { CommonModule } from './common/common.module';
+import configuration from './config/configuration';
+import { validateEnv } from './config/config.validation';
+import { HealthModule } from './health/health.module';
 import { PostsModule } from './posts/posts.module';
 
 @Module({
-  imports: [PostsModule],
-  providers: [
-    // 用 APP_FILTER / APP_INTERCEPTOR 注册全局组件，而不是 main.ts 里 useGlobalXxx
-    // 区别：这种方式走 DI，filter / interceptor 内部可以 inject 任何 provider
-    { provide: APP_FILTER, useClass: AllExceptionsFilter },
-    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
+  imports: [
+    // ConfigModule 必须在其他模块之前 import；其他地方注入 ConfigService 才能拿到
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // env 校验：缺/错环境变量在启动第一秒就崩，而不是请求进来才崩
+      validate: (raw: any) => {
+        const env = validateEnv(raw);
+        return configuration(env);
+      },
+    }),
+    CommonModule, // 全局 Filter / Interceptor / Pipe + Middleware 都在这里
+    HealthModule,
+    PostsModule,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestIdMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

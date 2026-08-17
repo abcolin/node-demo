@@ -10,10 +10,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { IsSlug } from '../../common/validators/is-slug.validator';
-import { PostStatus } from '../entities/post.entity';
+import { POST_STATUSES, type PostStatus } from '../entities/post.entity';
 import { PostMetaDto } from './post-meta.dto';
-
-const STATUSES: PostStatus[] = ['draft', 'published', 'archived'];
 
 export class CreatePostDto {
   @IsString()
@@ -35,7 +33,7 @@ export class CreatePostDto {
   @Length(1, 20, { each: true })
   tags?: string[];
 
-  @IsEnum(STATUSES, { message: `status 必须是 ${STATUSES.join(' / ')}` })
+  @IsEnum(POST_STATUSES, { message: `status 必须是 ${POST_STATUSES.join(' / ')}` })
   status!: PostStatus;
 
   // 嵌套 DTO：练习 3

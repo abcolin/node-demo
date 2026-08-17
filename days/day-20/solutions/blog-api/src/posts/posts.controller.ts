@@ -6,7 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -19,7 +19,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 
 // 控制器级 filter：精确匹配 BusinessException → 该 filter 接管
-// 其他异常（NotFoundException / Error / ...）冒泡到全局 AllExceptionsFilter
+// 其他异常（Error / 其它 HttpException）冒泡到全局 AllExceptionsFilter
 @UseFilters(BusinessExceptionFilter)
 @Controller('posts')
 export class PostsController {
@@ -30,14 +30,15 @@ export class PostsController {
     return this.posts.findAll(query);
   }
 
-  // 故意放在 :id 前面，避免 'debug' 被 ParseIntPipe 误吃
+  // 故意放在 :id 前面，避免 'debug' 被 ParseUUIDPipe 当成参数尝试解析
   @Get('debug/boom')
   boom() {
     return this.posts.triggerBoom();
   }
 
+  // ParseUUIDPipe 校验路径参数格式，非法 UUID 直接 400，不会进 Service
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.posts.findOne(id);
   }
 
@@ -48,12 +49,16 @@ export class PostsController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePostDto) {
+  update(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: UpdatePostDto,
+  ) {
     return this.posts.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.posts.remove(id);
   }
 }
